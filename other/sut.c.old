@@ -1,0 +1,49 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <string.h>
+
+#include "utils.h"
+
+#define DEFAULT_PORT_A 2121
+#define DEFAULT_PORT_B 2323
+#define DEFAULT_ADDR_A "127.0.0.1"
+#define DEFAULT_ADDR_B "127.0.0.1"
+
+int setInetAddr(struct sockaddr_in * addr, char * ipAddr, int port) {
+  memset(addr, 0, sizeof(struct sockaddr_in));
+  addr->sin_family = AF_INET;
+  addr->sin_port = port;
+  ERRHAND(-1, inet_aton(ipAddr, &addr->sin_addr));
+  return 0;
+}
+
+typedef struct arg { char * addr; int port; } arg_t;
+
+void *bridge_task(void *args) {
+  arg_t **arg = (arg_t **)args;
+  struct sockaddr_in addr[2];
+  int fd[2];
+
+  fd[0] = socket(AF_INET, SOCK_DGRAM, 0);
+  fd[1] = socket(AF_INET, SOCK_DGRAM, 0);
+
+  setInetAddr(&addr[0], (*arg)[0].addr, (*arg)[0].port);
+  
+  return NULL;
+}
+
+int main(int argc, char **argv) {
+  char *addr[2] = { DEFAULT_ADDR_A, DEFAULT_ADDR_B };
+  int port[2] = { DEFAULT_PORT_A, DEFAULT_PORT_B };
+  arg_t arg[2];
+
+  arg[0].addr = addr[0]; arg[0].port = port[0];
+  arg[1].addr = addr[1]; arg[1].port = port[1];
+  
+  bridge_task(&arg);
+
+  return 0;
+}
